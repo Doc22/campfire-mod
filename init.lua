@@ -1,3 +1,11 @@
+  -- Boilerplate to support localized strings if intllib mod is installed.
+  local S
+  if intllib then
+    S = intllib.Getter()
+  else
+    S = function(s) return s end
+  end
+
 minetest.register_craft({
 	output = "campfire:campfire", 
 	recipe = {{'', 'default:stick', ''}, {'default:stick', '', 'default:stick'}}
@@ -5,7 +13,7 @@ minetest.register_craft({
 
 
 minetest.register_node("campfire:campfire", {
-	description = "Camp Fire",
+	description = S("Camp Fire"),
 	drawtype = "plantlike",
 	tiles = {"CampFire_off.png"},
 	walkable=false,
@@ -17,7 +25,7 @@ minetest.register_node("campfire:campfire", {
 	sounds = default.node_sound_stone_defaults(),
 	on_construct = function(pos)
 		local meta = minetest.env:get_meta(pos)
-		meta:set_string("infotext", "Campfire")
+		meta:set_string("infotext", S("Campfire"))
 		local inv = meta:get_inventory()
 		inv:set_size("fuel", 1)
 		inv:set_size("src", 1)
@@ -38,14 +46,15 @@ minetest.register_node("campfire:campfire", {
 })
 
 minetest.register_node("campfire:campfire_active", {
-	description = "Campfire Active",
+	description = S("Campfire Active"),
 	drawtype = "plantlike",
 	tiles = {{name="CampFire.png", animation={type="vertical_frames", aspect_w=16, aspect_h=16, length=3.0}}},
 	light_source = 8,
 	paramtype="light",
 	walkable=false,
 	drop = "campfire:campfire",
-	groups = {cracky=2, not_in_creative_inventory=1},
+	groups = {igniter=2,cracky=2, not_in_creative_inventory=1},
+	damage_per_second = 4,
 	legacy_facedir_simple = true,
 	sounds = default.node_sound_stone_defaults(),
 	on_construct = function(pos)
@@ -69,6 +78,13 @@ minetest.register_node("campfire:campfire_active", {
 		end
 		return true
 	end,
+	after_place_node = function(pos)
+    	local t = {x=pos.x, y=pos.y+1, z=pos.z}
+    	local n = minetest.env:get_node(t)
+    	if n.name == "air" and makes_fire == true then
+      	  minetest.env:add_node(t, {name="firestone:flame"})
+    	end
+  	end,
 })
 
 function hacky_swap_node(pos,name)
@@ -127,7 +143,7 @@ minetest.register_abm({
 					srcstack:take_item()
 					inv:set_stack("src", 1, srcstack)
 				else
-					print("Could not insert '"..cooked.item:to_string().."'")
+					print(S("Could not insert '%s'"):format(cooked.item:to_string()))
 				end
 				meta:set_string("src_time", 0)
 			end
@@ -136,7 +152,7 @@ minetest.register_abm({
 		if meta:get_float("fuel_time") < meta:get_float("fuel_totaltime") then
 			local percent = math.floor(meta:get_float("fuel_time") /
 					meta:get_float("fuel_totaltime") * 100)
-			meta:set_string("infotext","Furnace active: "..percent.."%")
+			meta:set_string("infotext",S("Furnace active: %s%%"):format(percent))
 			hacky_swap_node(pos,"campfire:campfire_active")
 			meta:set_string("formspec",
 				"size[8,9]"..
@@ -162,7 +178,7 @@ minetest.register_abm({
 		end
 
 		if fuel.time <= 0 then
-			meta:set_string("infotext","Put more wood on the fire!")
+			meta:set_string("infotext",S("Put more wood on the fire!"))
 			hacky_swap_node(pos,"campfire:campfire")
 			meta:set_string("formspec", default.furnace_inactive_formspec)
 			return
@@ -178,3 +194,4 @@ minetest.register_abm({
 		inv:set_stack("fuel", 1, stack)
 	end,
 })
+
